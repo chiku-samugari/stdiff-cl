@@ -13,4 +13,4 @@
   :serial t
   :components ((:file "packages")
                (:file "stdiff-cl"))
-  :defsystem-depends-on (:pphtml :stdiff :cl-rainbow))
+  :defsystem-depends-on (:pphtml :stdiff :cl-rainbow :chiku.util :papply))
