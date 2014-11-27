@@ -6,19 +6,23 @@
 (defun wrap-by-brace (expr)
   (list '{ expr '}))
 
+(defun wrap-by-triangle (expr)
+  (list '< expr '>))
+
 (defun bracebracket (base modified &optional (allowed-distance 0))
-  (with-gensyms (refmark lostmark)
-    (apply-modifiednode-converters
-      (diff base modified refmark lostmark allowed-distance)
-      base refmark lostmark #'wrap-by-brace #'wrap-by-bracket)))
+  (multiple-value-bind (reftree losttree new ref lost cited)
+    (diff base modified allowed-distance)
+    (apply-easy-converters
+      base modified reftree losttree new ref lost cited
+      #'wrap-by-brace #'identity #'wrap-by-bracket #'wrap-by-triangle)))
 
 (defun stdiff-html (base modified outhtml-pathspec &optional (allowed-distance 0))
-  (output-as-html (format nil "<pre>~a</pre>"
-                          (pair-coloring
-                            "({" "})" #'green
-                            (pair-coloring
-                              "([" "])" #'red (bracebracket base modified allowed-distance))))
-                  outhtml-pathspec))
+  (multiple-value-call
+    #'(output-as-html (format nil "<pre>~a</pre><br/><br/><pre>~A</pre>"
+                              (pair-coloring  "(<" ">)" #'yellow (pair-coloring "([" "])" #'red a1))
+                              (pair-coloring "({" "})" #'green a0))
+                      outhtml-pathspec)
+    (bracebracket base modified allowed-distance)))
 
 ;(stdiff-html '(defun iota (n)
 ;                (let (lst)
@@ -32,10 +36,16 @@
 
 (defun stdiff-terminal (base modified &optional (allowed-distance 0))
   (let ((cl-rainbow:*enabled* t))
-    (pair-coloring
-      "({" "})" #'(color :green)
-      (pair-coloring
-        "([" "])" #'(color :red) (bracebracket base modified allowed-distance)))))
+    (multiple-value-bind (refside lostside)
+      (bracebracket base modified allowed-distance)
+      (values
+        (pair-coloring
+          "(<" ">)" #'(cl-rainbow:color :yellow)
+          (pair-coloring
+            "([" "])" #'(cl-rainbow:color :red) lostside))
+        (pair-coloring
+          "({" "})" #'(cl-rainbow:color :green) refside)
+        ))))
 
 (with-open-file (out "diff" :direction :output :if-does-not-exist :create :if-exists :supersede)
   (format out "[0m~A"
