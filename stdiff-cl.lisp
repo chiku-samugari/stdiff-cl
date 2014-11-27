@@ -24,15 +24,6 @@
                       outhtml-pathspec)
     (bracebracket base modified allowed-distance)))
 
-;(stdiff-html '(defun iota (n)
-;                (let (lst)
-;                  (dotimes (i n (nreverse lst))
-;                    (push i lst))))
-;             '(defun iota (n &optional (start 0))
-;                (let (lst)
-;                  (dotimes (i n (nreverse lst))
-;                    (push (+ i start) lst))))
-;             "iota-diff.html")
 
 (defun stdiff-terminal (base modified &optional (allowed-distance 0))
   (let ((cl-rainbow:*enabled* t))
@@ -46,51 +37,3 @@
         (pair-coloring
           "({" "})" #'(cl-rainbow:color :green) refside)
         ))))
-
-(with-open-file (out "diff" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (format out "[0m~A"
-          (stdiff-terminal
-            '(defun iota (n)
-               (let (lst)
-                 (dotimes (i n (nreverse lst))
-                   (push i lst))))
-            '(defun iota (n &optional (start 0) (step 1))
-               (let (lst)
-                 (dotimes (i n (nreverse lst))
-                   (push (+ i start) lst))))
-            0)))
-
-(defun foo (base modified &optional (allowed-distance 0))
-  (let ((table (make-hash-table :test #'equal)))
-    (values
-      (with-gensyms (refmark lostmark)
-        (let ((cl-rainbow:*enabled* t))
-          (apply-converters
-            (diff base modified refmark lostmark allowed-distance)
-            base refmark lostmark
-            (lambda (node route codelet)
-              (declare (ignorable node route codelet))
-              (setf (gethash route table) :new)
-              (color :green codelet))
-            (lambda (node route codelet)
-              (declare (ignorable node route codelet))
-              (setf (gethash route table) lostmark)
-              (color :red codelet))
-            (lambda (node route codelet)
-              (declare (ignorable node route codelet))
-              (setf (gethash route table) refmark)
-              (color :white codelet)))))
-      table)))
-
-(with-open-file (out "diff" :direction :output :if-does-not-exist :create :if-exists :supersede)
-  (format out "[0m~A"
-          (foo
-            '(defun iota (n)
-               (let (lst)
-                 (dotimes (i n (nreverse lst))
-                   (push i lst))))
-            '(defun iota (n &optional (start 0))
-               (let (lst)
-                 (dotimes (i n (nreverse lst))
-                   (push (+ i start) lst))))
-            0)))
